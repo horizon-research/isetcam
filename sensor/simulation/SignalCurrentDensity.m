@@ -109,6 +109,13 @@ if nRows*nCols < critSize
     
     irradiance = RGB2XWFormat(irradiance);
     
+    % YZ: It's a bit counterintuitive to understand what sQE is,
+    % but basically we can understand it as (irradiance * spectralQE) *
+    % oiWaveBinwidth, which is nothing more than assuming that the irradiance
+    % is the same for all the wavelength within a bin and so we first 
+    % do irradiance * spectralQE, which gets the irradiance at a particular
+    % wavelength, and then multiple by oiWaveBinwidth to get the irradiance
+    % for the entire bin.
     scdImage =  irradiance * sQE;           % SUM_bin (quanta/m2/nm/sec * (nm/bin)) = (quanta/m2/sec)
     scdImage = XW2RGBFormat(scdImage,nRows,nCols);
     % At this point, if we multiply by the photodetector area and the
