@@ -5,8 +5,8 @@ iSize  = 128;
 nLines = 4;
 fov    = 3;
 scene  = sceneCreate('star pattern',iSize,'ee',nLines);
-%fname  = fullfile(isetRootPath,'data','images','multispectral','StuffedAnimals_tungsten-hdrs.mat');
-%scene  = sceneFromFile(fname,'multispectral');
+%fname  = fullfile(isetRootPath,'data','images','rgb','eagle.jpg');
+%scene  = sceneFromFile(fname,'rgb');
 scene  = sceneSet(scene,'fov',fov);
 oi     = oiCreate;
 
@@ -50,7 +50,7 @@ S = 160;   % This is the size of the cropped oi
 fps = 7;
 vcNewGraphWin; colormap(gray); axis image; axis off
 noiseFreeV = zeros(sz);
-for ii=1:nFrames
+parfor ii=1:nFrames
     waitbar(ii/nFrames,w,sprintf('Scene %i',ii));
 
     % Rotation shrink the image at the boundary by adding in zero values
@@ -61,22 +61,28 @@ for ii=1:nFrames
     % ieAddObject(s); sceneWindow;
 
     % Compute and crop to keep just the center
-    oi = oiCompute(oi,s);
-    cp = oiGet(oi,'center pixel');
+    toi = oiCompute(oi,s);
+    cp = oiGet(toi,'center pixel');
     rect = round([cp(1) - S/2,  cp(2) - S/2,   S,   S]);
-    oiC = oiCrop(oi,rect);
+    oiC = oiCrop(toi,rect);
     % ieAddObject(oiC); oiWindow;
 
     % Create noise-free captures first, no clipping, gain, CDS, etc.
-    sensor = sensorSet(sensor,'noise flag',-1);
-    sensor = sensorCompute(sensor,oiC);
+    tSensor = sensorSet(sensor,'noise flag',-1);
+    tSensor = sensorCompute(tSensor,oiC);
 
-    v(:,:,ii) = sensorGet(sensor,'volts');
-    % This contains the noise free final voltages
-    noiseFreeV = noiseFreeV + v(:,:,ii);
-    imagesc(noiseFreeV); pause(1/fps);
+    v(:,:,ii) = sensorGet(tSensor,'volts');
+
+    % This contains the noise free final voltages; should be be used in
+    % sequential mode.
+    %noiseFreeV = noiseFreeV + v(:,:,ii);
+    %imagesc(noiseFreeV); pause(1/fps);
 end
 close(w)
+
+% only for parfor mode, add individual captures together.
+noiseFreeV = sum(v, 3);
+imagesc(noiseFreeV);
 
 % now add all the noises
 sensor = sensorSet(sensor, 'volts', noiseFreeV);
